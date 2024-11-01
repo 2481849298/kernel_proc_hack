@@ -19,12 +19,15 @@
 #include <linux/slab.h>
 #include "hide_process.h"
 #include <linux/init_task.h>
+#include <linux/kobject.h>
+#include <linux/sysfs.h>
+#include <linux/fs.h>
+//#include "key.h"
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0))
 	MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver); 
 #endif
-
-#define PROC_FILE_NAME "danqudong"//名字
+#define PROC_FILE_NAME "entryi"//名字
 
 
 extern struct task_struct *task;
@@ -32,14 +35,13 @@ struct task_struct *hide_pid_process_task;
 int hide_process_pid = 0;
 int hide_process_state = 0;
 
+inline long proc_ioctl(struct file *const file, unsigned int const cmd, unsigned long const arg)
+{
 	static COPY_MEMORY cm;
 	static struct process p_process;
 	static MODULE_BASE mb;
 	static char name[0x100] = {0};
-	
-long proc_ioctl(struct file *const file, unsigned int const cmd, unsigned long const arg)
-{
-	/*static char key[0x100] = {0};
+/*	static char key[0x100] = {0};
 	static bool is_verified = false;
 	if(cmd == OP_INIT_KEY && !is_verified) {
 		if (copy_from_user(key, (void __user*)arg, sizeof(key)-1) != 0) {
@@ -111,7 +113,7 @@ long proc_ioctl(struct file *const file, unsigned int const cmd, unsigned long c
 
 
 
-static ssize_t Proc_write(struct file *filp, char __user *arg, size_t size, loff_t *ppos) {
+/*static inline ssize_t Proc_write(struct file *filp, char __user *arg, size_t size, loff_t *ppos) {
 				if (copy_from_user(&cm, (void __user*)arg, sizeof(cm)) != 0) {
 					return -EFAULT;
 				}
@@ -130,7 +132,7 @@ static ssize_t Proc_write(struct file *filp, char __user *arg, size_t size, loff
 					return -1;
 				}
 		return -EFAULT;
-	}
+	}*/
 
 
 pid_t temp_pid;
@@ -138,17 +140,17 @@ struct task_struct *task;
 
 
 
-static int null_show(struct seq_file *m, void *v) {
+static inline int null_show(struct seq_file *m, void *v) {
     seq_printf(m, "看nm呢sb");
     return 0;
 }
 
-static int null_open(struct inode *inode, struct file *file) {
+static inline int null_open(struct inode *inode, struct file *file) {
 	task = current;  // 获取当前进程的task_struct
     return single_open(file, null_show, NULL);
 }
 
-static int null_close(struct inode *inode, struct file *file) {
+static inline int null_close(struct inode *inode, struct file *file) {
 	if (hide_process_state) {
 		recover_process(task);
 	}
@@ -162,7 +164,7 @@ static const struct file_operations Proc_fops = {
     .owner = THIS_MODULE,
     .open = null_open,
     .read = seq_read,
-    .write = Proc_write,
+    .write = seq_write,
     .llseek = seq_lseek,
     .release = null_close,
     .unlocked_ioctl = proc_ioctl,
@@ -170,10 +172,10 @@ static const struct file_operations Proc_fops = {
 };
 
 
-static int __init Proc_init(void) {
+static long inline_Proc_init(void) {
     proc_create_data(PROC_FILE_NAME, 0666, NULL, &Proc_fops, NULL);
     	if (!IS_ERR(filp_open("/proc/sched_debug", O_RDONLY, 0))) {
-		remove_proc_subtree("sched_debug", NULL); //移除/proc/sched_debug。
+		remove_proc_entry("sched_debug", NULL); //移除/proc/sched_debug。
 	}
 	if (!IS_ERR(filp_open("/proc/uevents_records", O_RDONLY, 0))) {
 		remove_proc_entry("uevents_records", NULL); //移除/proc/uevents_records。
@@ -185,10 +187,10 @@ static int __init Proc_init(void) {
 
 
 
-static void __exit Proc_exit(void) {
+static long inline_Proc_exit(void) {
     remove_proc_entry(PROC_FILE_NAME, NULL);
 }
 
-module_init(Proc_init);
-module_exit(Proc_exit);
+module_init(inline_Proc_init);
+module_exit(inline_Proc_exit);
 MODULE_LICENSE("GPL");

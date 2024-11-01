@@ -4,7 +4,7 @@
 
 int main(int argc, char **argv)
 {
-	// driver->init_key("paste your driver verify key here");
+	//driver->init_key("!@##$asdcgfxxxop");
 	PACKAGENAME *bm = "com.tencent.tmgp.pubgmhd";
 	pid = getPID("com.tencent.tmgp.pubgmhd");
 	printf("pid = %d\n", pid);

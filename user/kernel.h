@@ -9,22 +9,19 @@
 #include <sys/fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <errno.h>
 
-#define PROC_PATH "/proc/da"
-
-class My_proc{	
-	private:   
-typedef struct {
+class c_driver {	
+	private:  
 	pid_t pid;
-	uintptr_t addr;
-	void* buffer;
-	size_t size;
-}comm;
+	int fd;
+    char path[256];
 
+	
 	typedef struct _COPY_MEMORY {
 		pid_t pid;
 		uintptr_t addr;
-		void* buffer;
+		void *buffer;
 		size_t size;
 	} COPY_MEMORY, *PCOPY_MEMORY;
 
@@ -46,28 +43,52 @@ typedef struct {
     OP_HIDE_PROCESS = 0x804,
     OP_PID_HIDE_PROCESS = 0x805,
     OP_GET_PROCESS_PID = 0x806
-	};
-	
+	};	
 
-public:
-    int pid;
-    int fd;
-    My_proc(){
-        fd = open(PROC_PATH, O_RDWR);
-        if(fd == -1){
-            printf("链接节点失败 \n");
+	char *driver_path() {
+	DIR *dir;
+	struct dirent *entry;
+	dir = opendir("/proc");
+	if (dir == NULL)
+	{
+		perror("无法打开/proc");
+		return NULL;
+	}
+
+  
+    while ((entry = readdir(dir)) != NULL) {
+			// 跳过当前目录和上级目录
+
+
+
+      if (strlen(entry->d_name) != 6 || strcmp(entry->d_name, "NVTSPI") == 0 || strcmp(entry->d_name, "ccci_log") == 0 || strcmp(entry->d_name, "aputag") == 0 || strcmp(entry->d_name, "asound") == 0 || strcmp(entry->d_name, "clkdbg") == 0 || strcmp(entry->d_name, "crypto") == 0 || strcmp(entry->d_name, "driver") == 0 || strcmp(entry->d_name, "mounts") == 0 || strcmp(entry->d_name, "pidmap") == 0 || strcmp(entry->d_name, "phoenix") == 0) {
+        continue;
+      }
+
+        struct stat statbuf;        
+       snprintf(path, sizeof(path), "/proc/%s", entry->d_name); // 构建文件的完整路径
+
+        if (stat(path, &statbuf) < 0) {
+            continue;
         }
-		if (fd>0){
-		    printf("链接节点成功 \n" );
-		    printf("节点为%s\n",PROC_PATH);
-		}
+		if ((S_ISREG(statbuf.st_mode))  // 确保是普通文件，不是目录
+                    //大小还有gid和uid是否为0(root)并且文件名称长度在7位或7位以下
+					&& statbuf.st_size == 0
+					&& statbuf.st_gid == 0
+					&& statbuf.st_uid == 0
+					&& ((statbuf.st_mode & (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) == (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH))) {
+
+	
+               return path;
+}
+}
+
+	closedir(dir);
+    return NULL;
     }
-    
-    void offdriver(){
-    	close(fd);
-    }
-    
-    void mem_read(long address,void *buffer,size_t size){
+
+
+/*    void mem_read(long address,void *buffer,size_t size){
     	comm co;
     	co.pid = this->pid;
     	co.addr = address;
@@ -77,13 +98,42 @@ public:
 
         read(fd, &co, sizeof(co));
         //不可能会错误的知道吧
-    }
+    }*/
+	int open_driver() {
+
+		char *dev_path1 = driver_path();
+		if (dev_path1 != NULL) {
+			fd = open(dev_path1, O_RDWR);
+			if (fd>0){
+				printf("驱动文件：%s\n", dev_path1);
+				return 1;
+			}
+		}
+
+		return 0;
+	}
+	
+	public:
+	c_driver() {
+		open_driver();
+		if (fd <= 0) {
+			printf("[-] 连接驱动失败，你赶紧重开吧\n");
+			exit(0);
+		}
+	}
+
+	~c_driver() {
+		//wont be called
+		if (fd > 0)
+			close(fd);
+	}
+
 
 
 	void initialize(pid_t pid) {
 		this->pid = pid;
 	}
-
+	
 	bool init_key(char* key) {
 		char buf[0x100];
 		strcpy(buf,key);
@@ -168,7 +218,7 @@ public:
   }
 };
 
-static My_proc *driver = new My_proc();
+static c_driver *driver = new c_driver();
 
 /*--------------------------------------------------------------------------------------------------------*/
 
