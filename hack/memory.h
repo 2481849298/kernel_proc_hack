@@ -148,7 +148,7 @@ size_t write_physical_address(phys_addr_t pa, void* buffer, size_t size) {
 	return size;
 }
 
-bool read_process_memory(pid_t pid, uintptr_t addr, void* buffer, size_t size)
+bool read_process_memory(pid_t pid, uintptr_t addr, void* buffer, size_t size, int read_write)
 {
 	struct task_struct* task;
 	struct mm_struct* mm;
@@ -181,7 +181,7 @@ bool read_process_memory(pid_t pid, uintptr_t addr, void* buffer, size_t size)
 	return count;
 }
 
-bool write_process_memory(pid_t pid, uintptr_t addr, void* buffer, size_t size)
+bool write_process_memory(pid_t pid, uintptr_t addr, void* buffer, size_t size, int read_write)
 {
 	struct task_struct* task;
 	struct mm_struct* mm;

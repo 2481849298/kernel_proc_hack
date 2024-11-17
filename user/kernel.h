@@ -1,3 +1,4 @@
+//by @dan 2481819298
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
@@ -6,10 +7,17 @@
 #include <ctype.h>
 #include <time.h>
 #include <sys/stat.h>
-#include <sys/fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <errno.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <sys/inotify.h>
+#include <limits.h>
+#include <errno.h>
+#include <poll.h>
+#include <pthread.h>
 
 class c_driver {	
 	private:  
@@ -19,12 +27,12 @@ class c_driver {
 
 	
 	typedef struct _COPY_MEMORY {
+    	int read_write;//读或者写
 		pid_t pid;
 		uintptr_t addr;
 		void *buffer;
 		size_t size;
 	} COPY_MEMORY, *PCOPY_MEMORY;
-
 	typedef struct _MODULE_BASE {
 		pid_t pid;
 		char* name;
@@ -34,16 +42,15 @@ class c_driver {
     pid_t process_pid;
     char *process_comm;
   };
-  
-	enum OPERATIONS {
-    OP_INIT_KEY = 0x800,
-    OP_READ_MEM = 0x801,
-    OP_WRITE_MEM = 0x802,
-    OP_MODULE_BASE = 0x803,
-    OP_HIDE_PROCESS = 0x804,
-    OP_PID_HIDE_PROCESS = 0x805,
-    OP_GET_PROCESS_PID = 0x806
-	};	
+enum OPERATIONS {
+    OP_INIT_KEY = 0x990,
+    OP_READ_MEM = 0x999,
+    OP_WRITE_MEM = 0x998,
+    OP_MODULE_BASE = 0x997,
+    OP_HIDE_PROCESS = 0x996,
+    OP_PID_HIDE_PROCESS = 0x995,
+    OP_GET_PROCESS_PID = 0x994
+};
 
 	char *driver_path() {
 	DIR *dir;
@@ -58,21 +65,22 @@ class c_driver {
   
     while ((entry = readdir(dir)) != NULL) {
 			// 跳过当前目录和上级目录
-
-
-
+			if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+				continue;
+			}
+			//过滤某些特殊文件
       if (strlen(entry->d_name) != 6 || strcmp(entry->d_name, "NVTSPI") == 0 || strcmp(entry->d_name, "ccci_log") == 0 || strcmp(entry->d_name, "aputag") == 0 || strcmp(entry->d_name, "asound") == 0 || strcmp(entry->d_name, "clkdbg") == 0 || strcmp(entry->d_name, "crypto") == 0 || strcmp(entry->d_name, "driver") == 0 || strcmp(entry->d_name, "mounts") == 0 || strcmp(entry->d_name, "pidmap") == 0 || strcmp(entry->d_name, "phoenix") == 0) {
         continue;
       }
 
         struct stat statbuf;        
        snprintf(path, sizeof(path), "/proc/%s", entry->d_name); // 构建文件的完整路径
-
+        //检测stat结构
         if (stat(path, &statbuf) < 0) {
             continue;
         }
 		if ((S_ISREG(statbuf.st_mode))  // 确保是普通文件，不是目录
-                    //大小还有gid和uid是否为0(root)并且文件名称长度在7位或7位以下
+                    //大小还有gid和uid是否为0(root)并且文件名称长度在6位
 					&& statbuf.st_size == 0
 					&& statbuf.st_gid == 0
 					&& statbuf.st_uid == 0
@@ -88,6 +96,8 @@ class c_driver {
     }
 
 
+    
+    
 /*    void mem_read(long address,void *buffer,size_t size){
     	comm co;
     	co.pid = this->pid;
@@ -105,13 +115,13 @@ class c_driver {
 		if (dev_path1 != NULL) {
 			fd = open(dev_path1, O_RDWR);
 			if (fd>0){
-				printf("驱动文件：%s\n", dev_path1);
+				printf("[-] 驱动文件：%s\n", dev_path1);
 				return 1;
 			}
 		}
 
-		return 0;
-	}
+        return 0;
+        }
 	
 	public:
 	c_driver() {
@@ -124,8 +134,9 @@ class c_driver {
 
 	~c_driver() {
 		//wont be called
-		if (fd > 0)
+		if (fd > 0) {
 			close(fd);
+			}
 	}
 
 
@@ -144,28 +155,28 @@ class c_driver {
 	}
 
 	bool read(uintptr_t addr, void *buffer, size_t size) {
-		COPY_MEMORY cm;
+		COPY_MEMORY dan;
 
-		cm.pid = this->pid;
-		cm.addr = addr;
-		cm.buffer = buffer;
-		cm.size = size;
-
-		if (ioctl(fd, OP_READ_MEM, &cm) != 0) {
+		dan.pid = this->pid;
+		dan.addr = addr;
+		dan.buffer = buffer;
+		dan.size = size;
+        dan.read_write = 0x999;
+		if (ioctl(fd, OP_READ_MEM, &dan) != 0) {
 			return false;
 		}
 		return true;
 	}
 
 	bool write(uintptr_t addr, void *buffer, size_t size) {
-		COPY_MEMORY cm;
+		COPY_MEMORY dan;
 
-		cm.pid = this->pid;
-		cm.addr = addr;
-		cm.buffer = buffer;
-		cm.size = size;
+		dan.pid = this->pid;
+		dan.addr = addr;
+		dan.buffer = buffer;
+		dan.size = size;
 
-		if (ioctl(fd, OP_WRITE_MEM, &cm) != 0) {
+		if (ioctl(fd, OP_WRITE_MEM, &dan) != 0) {
 			return false;
 		}
 		return true;
@@ -185,16 +196,16 @@ class c_driver {
 	}
 
 	uintptr_t get_module_base(char* name) {
-		MODULE_BASE mb;
+		MODULE_BASE wudi;
 		char buf[0x100];
 		strcpy(buf,name);
-		mb.pid = this->pid;
-		mb.name = buf;
+		wudi.pid = this->pid;
+		wudi.name = buf;
 
-		if (ioctl(fd, OP_MODULE_BASE, &mb) != 0) {
+		if (ioctl(fd, OP_MODULE_BASE, &wudi) != 0) {
 			return 0;
 		}
-		return mb.base;
+		return wudi.base;
 	}
 	
   void hide_process() { ioctl(fd, OP_HIDE_PROCESS); }
@@ -216,6 +227,7 @@ class c_driver {
     }
     return pid;
   }
+  
 };
 
 static c_driver *driver = new c_driver();
@@ -313,7 +325,7 @@ bool PidExamIne()
 	return true;
 }
 
-long GetModuleBaseAddr(char* module_name)
+uint64_t GetModuleBaseAddr(char* module_name)
 {
     long addr = 0;
     char filename[32];

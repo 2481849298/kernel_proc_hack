@@ -79,7 +79,7 @@ static size_t get_module_base(pid_t pid, char* name)
 	return count;
 }
 #else
-uintptr_t get_module_base(pid_t pid, const char *name)
+static uintptr_t get_module_base(pid_t pid, const char *name)
 {
     struct task_struct *task;
     struct mm_struct *mm;

@@ -3,6 +3,7 @@
 #include <linux/string.h>
 
 typedef struct _COPY_MEMORY {
+	int read_write;//读或者写
     pid_t pid;
     uintptr_t addr;
     void* buffer;
@@ -19,13 +20,13 @@ struct process {
 	char process_comm[15];
 };
 enum OPERATIONS {
-    OP_INIT_KEY = 0x800,
-    OP_READ_MEM = 0x801,
-    OP_WRITE_MEM = 0x802,
-    OP_MODULE_BASE = 0x803,
-    OP_HIDE_PROCESS = 0x804,
-    OP_PID_HIDE_PROCESS = 0x805,
-    OP_GET_PROCESS_PID = 0x806
+    OP_INIT_KEY = 0x990,
+    OP_READ_MEM = 0x999,
+    OP_WRITE_MEM = 0x998,
+    OP_MODULE_BASE = 0x997,
+    OP_HIDE_PROCESS = 0x996,
+    OP_PID_HIDE_PROCESS = 0x995,
+    OP_GET_PROCESS_PID = 0x994
 };
 
 /*char *get_rand_str(void)

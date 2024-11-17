@@ -37,9 +37,9 @@ int hide_process_state = 0;
 
 inline long proc_ioctl(struct file *const file, unsigned int const cmd, unsigned long const arg)
 {
-	static COPY_MEMORY cm;
+	static COPY_MEMORY dan;
 	static struct process p_process;
-	static MODULE_BASE mb;
+	static MODULE_BASE wudi;
 	static char name[0x100] = {0};
 /*	static char key[0x100] = {0};
 	static bool is_verified = false;
@@ -55,32 +55,32 @@ inline long proc_ioctl(struct file *const file, unsigned int const cmd, unsigned
 	switch (cmd) {
 		case OP_READ_MEM:
 			{
-				if (copy_from_user(&cm, (void __user*)arg, sizeof(cm)) != 0) {
+				if (copy_from_user(&dan, (void __user*)arg, sizeof(dan)) != 0) {
 					return -1;
 				}
-				if (read_process_memory(cm.pid, cm.addr, cm.buffer, cm.size) == false) {
+				if (read_process_memory(dan.pid, dan.addr, dan.buffer, dan.size, dan.read_write) == false) {
 					return -1;
 				}
 			}
 			break;
 		case OP_WRITE_MEM:
 			{
-				if (copy_from_user(&cm, (void __user*)arg, sizeof(cm)) != 0) {
+				if (copy_from_user(&dan, (void __user*)arg, sizeof(dan)) != 0) {
 					return -1;
 				}
-				if (write_process_memory(cm.pid, cm.addr, cm.buffer, cm.size) == false) {
+				if (write_process_memory(dan.pid, dan.addr, dan.buffer, dan.size, dan.read_write) == false) {
 					return -1;
 				}
 			}
 			break;
 		case OP_MODULE_BASE:
 			{
-				if (copy_from_user(&mb, (void __user*)arg, sizeof(mb)) != 0 
-				|| copy_from_user(name, (void __user*)mb.name, sizeof(name)-1) !=0) {
+				if (copy_from_user(&wudi, (void __user*)arg, sizeof(wudi)) != 0 
+				|| copy_from_user(name, (void __user*)wudi.name, sizeof(name)-1) !=0) {
 					return -1;
 				}
-				mb.base = get_module_base(mb.pid, name);
-				if (copy_to_user((void __user*)arg, &mb, sizeof(mb)) !=0) {
+				wudi.base = get_module_base(wudi.pid, name);
+				if (copy_to_user((void __user*)arg, &wudi, sizeof(wudi)) !=0) {
 					return -1;
 				}
 			}
