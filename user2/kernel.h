@@ -33,11 +33,11 @@ class c_driver {
 		void *buffer;
 		size_t size;
 	} COPY_MEMORY, *PCOPY_MEMORY;
-	typedef struct _MODULE_BASE {
+/*	typedef struct _MODULE_BASE {
 		pid_t pid;
 		char* name;
 		uintptr_t base;
-	} MODULE_BASE, *PMODULE_BASE;
+	} MODULE_BASE, *PMODULE_BASE;*/
   struct process {
     pid_t process_pid;
     char *process_comm;
@@ -46,7 +46,7 @@ enum OPERATIONS {
     OP_INIT_KEY = 0x990,
     OP_READ_MEM = 0x999,
     OP_WRITE_MEM = 0x998,
-    OP_MODULE_BASE = 0x997,
+//    OP_MODULE_BASE = 0x997,
     OP_HIDE_PROCESS = 0x996,
     OP_PID_HIDE_PROCESS = 0x995,
     OP_GET_PROCESS_PID = 0x994
@@ -69,7 +69,7 @@ enum OPERATIONS {
 				continue;
 			}
 			//过滤某些特殊文件
-      if (strlen(entry->d_name) != 6 || strcmp(entry->d_name, "NVTSPI") == 0 || strcmp(entry->d_name, "ccci_log") == 0 || strcmp(entry->d_name, "aputag") == 0 || strcmp(entry->d_name, "asound") == 0 || strcmp(entry->d_name, "clkdbg") == 0 || strcmp(entry->d_name, "crypto") == 0 || strcmp(entry->d_name, "driver") == 0 || strcmp(entry->d_name, "mounts") == 0 || strcmp(entry->d_name, "pidmap") == 0 || strcmp(entry->d_name, "phoenix") == 0) {
+      if (strlen(entry->d_name) != 6 || strcmp(entry->d_name, "NVTSPI") == 0 || strcmp(entry->d_name, "ccci_log") == 0 || strcmp(entry->d_name, "aputag") == 0 || strcmp(entry->d_name, "asound") == 0 || strcmp(entry->d_name, "clkdbg") == 0 || strcmp(entry->d_name, "crypto") == 0 || strcmp(entry->d_name, "entryi") == 0 || strcmp(entry->d_name, "mounts") == 0 || strcmp(entry->d_name, "pidmap") == 0 || strcmp(entry->d_name, "phoenix") == 0) {
         continue;
       }
 
@@ -195,7 +195,20 @@ enum OPERATIONS {
 		return this->write(addr, &value, sizeof(T));
 	}
 
-uint64_t GetModuleBaseAddr(char* module_name)
+/*	uintptr_t get_module_base(char* name) {
+		MODULE_BASE wudi;
+		char buf[0x100];
+		strcpy(buf,name);
+		wudi.pid = this->pid;
+		wudi.name = buf;
+
+		if (ioctl(fd, OP_MODULE_BASE, &wudi) != 0) {
+			return 0;
+		}
+		return wudi.base;
+	}*/
+	
+	uint64_t GetModuleBaseAddr(char* module_name)
 {
     long addr = 0;
     char filename[32];
@@ -223,21 +236,6 @@ uint64_t GetModuleBaseAddr(char* module_name)
     }
     return addr;
 }
-
-
-	uintptr_t get_module_base(char* name) {
-		MODULE_BASE wudi;
-		char buf[0x100];
-		strcpy(buf,name);
-		wudi.pid = this->pid;
-		wudi.name = buf;
-
-		if (ioctl(fd, OP_MODULE_BASE, &wudi) != 0) {
-			return 0;
-		}
-		return wudi.base;
-	}
-	
   void hide_process() { ioctl(fd, OP_HIDE_PROCESS); }
 
   void hide_pid_process(unsigned int &pid) {
@@ -327,16 +325,6 @@ char *getDirectory()
 	return buf;
 }
 
-long getModuleBase(char* module_name)
-{
-	uintptr_t base=0;
-	//if (Kernel_v() >= 6.0)
-		base = GetModuleBaseAddr(module_name);
-//	else
-//		base = driver->get_module_base(module_name);
-	return base;
-}
-
 int getPID(char* PackageName)
 {
 	FILE* fp;
@@ -365,6 +353,16 @@ bool PidExamIne()
 	return true;
 }
 
+
+long getModuleBase(char* module_name)
+{
+	uintptr_t base=0;
+//	if (Kernel_v() >= 6.0)
+		base = driver->GetModuleBaseAddr(module_name);
+//	else
+//		base = driver->get_module_base(module_name);
+	return base;
+}
 
 long ReadValue(long addr)
 {
@@ -409,4 +407,4 @@ int WriteFloat(long int addr, float value)
 {
 	driver->write(addr, &value, 4);
 	return 0;
-}
+	}
