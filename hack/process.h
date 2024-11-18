@@ -19,9 +19,9 @@
 #ifndef ARC_PATH_MAX
 #define ARC_PATH_MAX PATH_MAX
 #endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+//#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
 
-static size_t get_module_base(pid_t pid, char* name)
+/*static size_t get_module_base(pid_t pid, char* name)
 {
 	struct task_struct* task;
 	struct mm_struct* mm;
@@ -133,7 +133,7 @@ static uintptr_t get_module_base(pid_t pid, const char *name)
     mmput(mm);
     return count;
 }
-#endif
+#endif*/
 
 pid_t get_process_pid(char *comm)
 {

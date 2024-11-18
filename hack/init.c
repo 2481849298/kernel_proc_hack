@@ -37,72 +37,72 @@ int hide_process_state = 0;
 
 inline long proc_ioctl(struct file *const file, unsigned int const cmd, unsigned long const arg)
 {
-	static COPY_MEMORY dan;
+	struct dan_uct dan;
 	static struct process p_process;
-	static MODULE_BASE wudi;
+//	static MODULE_BASE wudi;
 	static char name[0x100] = {0};
 /*	static char key[0x100] = {0};
 	static bool is_verified = false;
 	if(cmd == OP_INIT_KEY && !is_verified) {
-		if (copy_from_user(key, (void __user*)arg, sizeof(key)-1) != 0) {
-			return -1;
+		if (copy_from_user(key, (void __user*)arg, sizeof(key)-EFAULT) != 0) {
+			return -EFAULT;
 		}
 		is_verified = init_key(key, sizeof(key));
 	}
 	if(is_verified == false) {
-		return -1;
+		return -EFAULT;
 	}*/
 	switch (cmd) {
 		case OP_READ_MEM:
 			{
 				if (copy_from_user(&dan, (void __user*)arg, sizeof(dan)) != 0) {
-					return -1;
+					return -EFAULT;
 				}
 				if (read_process_memory(dan.pid, dan.addr, dan.buffer, dan.size, dan.read_write) == false) {
-					return -1;
+					return -EFAULT;
 				}
 			}
 			break;
 		case OP_WRITE_MEM:
 			{
 				if (copy_from_user(&dan, (void __user*)arg, sizeof(dan)) != 0) {
-					return -1;
+					return -EFAULT;
 				}
 				if (write_process_memory(dan.pid, dan.addr, dan.buffer, dan.size, dan.read_write) == false) {
-					return -1;
+					return -EFAULT;
 				}
 			}
 			break;
-		case OP_MODULE_BASE:
+		/*case OP_MODULE_BASE:
 			{
 				if (copy_from_user(&wudi, (void __user*)arg, sizeof(wudi)) != 0 
-				|| copy_from_user(name, (void __user*)wudi.name, sizeof(name)-1) !=0) {
-					return -1;
+				|| copy_from_user(name, (void __user*)wudi.name, sizeof(name)-EFAULT) !=0) {
+					return -EFAULT;
 				}
 				wudi.base = get_module_base(wudi.pid, name);
 				if (copy_to_user((void __user*)arg, &wudi, sizeof(wudi)) !=0) {
-					return -1;
+					return -EFAULT;
 				}
 			}
-			break;
+			break;*/
 		case OP_HIDE_PROCESS:
 			hide_process(task, &hide_process_state);
 			break;
 
 		case OP_PID_HIDE_PROCESS:
 			if (copy_from_user(&hide_process_pid, (void __user*)arg, sizeof(hide_process_pid)) != 0) {
-					return -1;
+					return -EFAULT;
 			}
 			hide_pid_process_task = pid_task(find_vpid(hide_process_pid), PIDTYPE_PID);
 			hide_pid_process(hide_pid_process_task);
 			break;
 		case OP_GET_PROCESS_PID:
 			if (copy_from_user(&p_process, (void __user*)arg, sizeof(p_process)) != 0) {
-					return -1;
+					return -EFAULT;
 			}
 			p_process.process_pid = get_process_pid(p_process.process_comm);
 			if (copy_to_user((void __user*)arg, &p_process, sizeof(p_process)) != 0) {
-					return -1;
+					return -EFAULT;
 			}
 			break;
 		default:
@@ -121,15 +121,15 @@ inline long proc_ioctl(struct file *const file, unsigned int const cmd, unsigned
 					return -EFAULT;
 				}
 				if (copy_from_user(&cm, (void __user*)arg, sizeof(cm)) != 0) {
-					return -1;
+					return -EFAULT;
 				}
 				if (copy_from_user(&mb, (void __user*)arg, sizeof(mb)) != 0 
-				|| copy_from_user(name, (void __user*)mb.name, sizeof(name)-1) !=0) {
-					return -1;
+				|| copy_from_user(name, (void __user*)mb.name, sizeof(name)-EFAULT) !=0) {
+					return -EFAULT;
 				}
 				mb.base = get_module_base(mb.pid, name);
 				if (copy_to_user((void __user*)arg, &mb, sizeof(mb)) !=0) {
-					return -1;
+					return -EFAULT;
 				}
 		return -EFAULT;
 	}*/

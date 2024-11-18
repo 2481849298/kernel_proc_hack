@@ -18,7 +18,7 @@ KERNEL_DIR=$(pwd)
 
 
 export CLANG_PATH=/root/clang-r383902
-export GCC64_PATH=/gcc/aarch64
+export GCC64_PATH=/root/gcc/aarch64
 export GCC32_PATH=/root/gcc/arm
 # archƽ̨
 ARCH=arm64
@@ -33,18 +33,8 @@ CROSS_COMPILE=${GCC64_PATH}/bin/aarch64-linux-android- \
 CLANG_TRIPLE=${GCC64_PATH}/bin/aarch64-linux-gnu- \
 CROSS_COMPILE_ARM32=${GCC32_PATH}/bin/arm-linux-androideabi- \
 CC=${CLANG_PATH}/bin/clang \
-AR=${CLANG_PATH}/bin/llvm-ar \
-NM=${CLANG_PATH}/bin/llvm-nm \
-LD=${CLANG_PATH}/bin/ld.lld \
-HOSTCC=${CLANG_PATH}/bin/clang \
-HOSTCXX=${CLANG_PATH}/bin/clang++ \
-OBJCOPY=${CLANG_PATH}/bin/llvm-objcopy \
-OBJDUMP=${CLANG_PATH}/bin/llvm-objdump \
-READELF=${CLANG_PATH}/bin/llvm-readelf \
-OBJSIZE=${CLANG_PATH}/bin/llvm-size \
-STRIP=${CLANG_PATH}/bin/llvm-strip \
-LLVM_IAS=1 \
-LLVM=1"
+LD=${CLANG_PATH}/bin/ld.lld
+"
 
 BUILD_ARGS="-j${TH_COUNT} ${DEF_ARGS}"
 

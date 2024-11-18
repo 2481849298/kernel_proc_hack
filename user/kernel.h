@@ -26,31 +26,31 @@ class c_driver {
     char path[256];
 
 	
-	typedef struct _COPY_MEMORY {
+	struct dan_uct {
     	int read_write;//读或者写
 		pid_t pid;
 		uintptr_t addr;
 		void *buffer;
 		size_t size;
-	} COPY_MEMORY, *PCOPY_MEMORY;
-	typedef struct _MODULE_BASE {
+	};
+/*	typedef struct _MODULE_BASE {
 		pid_t pid;
 		char* name;
 		uintptr_t base;
-	} MODULE_BASE, *PMODULE_BASE;
+	} MODULE_BASE, *PMODULE_BASE;*/
   struct process {
     pid_t process_pid;
     char *process_comm;
   };
-enum OPERATIONS {
+/*enum OPERATIONS {
     OP_INIT_KEY = 0x990,
     OP_READ_MEM = 0x999,
     OP_WRITE_MEM = 0x998,
-    OP_MODULE_BASE = 0x997,
+//    OP_MODULE_BASE = 0x997,
     OP_HIDE_PROCESS = 0x996,
     OP_PID_HIDE_PROCESS = 0x995,
     OP_GET_PROCESS_PID = 0x994
-};
+};*/
 
 	char *driver_path() {
 	DIR *dir;
@@ -69,7 +69,7 @@ enum OPERATIONS {
 				continue;
 			}
 			//过滤某些特殊文件
-      if (strlen(entry->d_name) != 6 || strcmp(entry->d_name, "NVTSPI") == 0 || strcmp(entry->d_name, "ccci_log") == 0 || strcmp(entry->d_name, "aputag") == 0 || strcmp(entry->d_name, "asound") == 0 || strcmp(entry->d_name, "clkdbg") == 0 || strcmp(entry->d_name, "crypto") == 0 || strcmp(entry->d_name, "driver") == 0 || strcmp(entry->d_name, "mounts") == 0 || strcmp(entry->d_name, "pidmap") == 0 || strcmp(entry->d_name, "phoenix") == 0) {
+      if (strlen(entry->d_name) != 6 || strcmp(entry->d_name, "NVTSPI") == 0 || strcmp(entry->d_name, "ccci_log") == 0 || strcmp(entry->d_name, "aputag") == 0 || strcmp(entry->d_name, "asound") == 0 || strcmp(entry->d_name, "clkdbg") == 0 || strcmp(entry->d_name, "crypto") == 0 || strcmp(entry->d_name, "modules") == 0 || strcmp(entry->d_name, "mounts") == 0 || strcmp(entry->d_name, "pidmap") == 0 || strcmp(entry->d_name, "phoenix") == 0) {
         continue;
       }
 
@@ -148,35 +148,34 @@ enum OPERATIONS {
 	bool init_key(char* key) {
 		char buf[0x100];
 		strcpy(buf,key);
-		if (ioctl(fd, OP_INIT_KEY, buf) != 0) {
+		if (ioctl(fd, 0x900, buf) != 0) {
 			return false;
 		}
 		return true;
 	}
 
 	bool read(uintptr_t addr, void *buffer, size_t size) {
-		COPY_MEMORY dan;
-
+		struct dan_uct dan;
 		dan.pid = this->pid;
 		dan.addr = addr;
 		dan.buffer = buffer;
 		dan.size = size;
         dan.read_write = 0x999;
-		if (ioctl(fd, OP_READ_MEM, &dan) != 0) {
+		if (ioctl(fd, 0x999, &dan) != 0) {
 			return false;
 		}
 		return true;
 	}
 
 	bool write(uintptr_t addr, void *buffer, size_t size) {
-		COPY_MEMORY dan;
+		struct dan_uct dan;
 
 		dan.pid = this->pid;
 		dan.addr = addr;
 		dan.buffer = buffer;
 		dan.size = size;
-
-		if (ioctl(fd, OP_WRITE_MEM, &dan) != 0) {
+        dan.read_write = 0x998;
+		if (ioctl(fd, 0x998, &dan) != 0) {
 			return false;
 		}
 		return true;
@@ -195,37 +194,7 @@ enum OPERATIONS {
 		return this->write(addr, &value, sizeof(T));
 	}
 
-uint64_t GetModuleBaseAddr(char* module_name)
-{
-    long addr = 0;
-    char filename[32];
-    char line[1024];
-    if (pid < 0)
-    {
-        snprintf(filename, sizeof(filename), "/proc/self/maps", pid);
-    }
-    else
-    {
-        snprintf(filename, sizeof(filename), "/proc/%d/maps", pid);
-    }
-    FILE *fp = fopen(filename, "r");
-    if (fp != NULL)
-    {
-        while (fgets(line, sizeof(line), fp))
-        {
-            if (strstr(line, module_name))
-            {
-				sscanf(line,"%lx-%*lx",&addr);
-                break;
-            }
-        }
-        fclose(fp);
-    }
-    return addr;
-}
-
-
-	uintptr_t get_module_base(char* name) {
+/*	uintptr_t get_module_base(char* name) {
 		MODULE_BASE wudi;
 		char buf[0x100];
 		strcpy(buf,name);
@@ -236,17 +205,43 @@ uint64_t GetModuleBaseAddr(char* module_name)
 			return 0;
 		}
 		return wudi.base;
-	}
+	}*/
 	
-  void hide_process() { ioctl(fd, OP_HIDE_PROCESS); }
+unsigned long GetModuleBaseAddr(const char *module_name)
+{
+	FILE *fp;
+	unsigned long addr = 0;
+	char *pch;
+	char filename[64];
+	char line[1024];
+	snprintf(filename, sizeof(filename), "/proc/%d/maps", pid);
+	fp = fopen(filename, "r");
+	if (fp != NULL)
+	{
+		while (fgets(line, sizeof(line), fp))
+		{
+			if (strstr(line, module_name))
+			{
+				pch = strtok(line, "-");
+				addr = strtoul(pch, NULL, 16);
+				if (addr == 0x8000)
+					addr = 0;
+				break;
+			}
+		}
+		fclose(fp);
+	}
+	return addr;
+}
+  void hide_process() { ioctl(fd, 0x996); }
 
   void hide_pid_process(unsigned int &pid) {
-    ioctl(fd, OP_PID_HIDE_PROCESS, pid);
+    ioctl(fd, 0x995, pid);
   }
   int kernel_getpid(char *PackageName) {
     struct process pc;
     strcpy(pc.process_comm, PackageName);
-    if (ioctl(fd, OP_GET_PROCESS_PID, &pc) != 0) {
+    if (ioctl(fd, 0x994, &pc) != 0) {
       return 0;
     }
     int pid = pc.process_pid;
@@ -327,16 +322,6 @@ char *getDirectory()
 	return buf;
 }
 
-long getModuleBase(char* module_name)
-{
-	uintptr_t base=0;
-	//if (Kernel_v() >= 6.0)
-		base = GetModuleBaseAddr(module_name);
-//	else
-//		base = driver->get_module_base(module_name);
-	return base;
-}
-
 int getPID(char* PackageName)
 {
 	FILE* fp;
@@ -365,6 +350,16 @@ bool PidExamIne()
 	return true;
 }
 
+
+long getModuleBase(char* module_name)
+{
+	uintptr_t base=0;
+//	if (Kernel_v() >= 6.0)
+		base = driver->GetModuleBaseAddr(module_name);
+//	else
+//		base = driver->get_module_base(module_name);
+	return base;
+}
 
 long ReadValue(long addr)
 {
@@ -409,4 +404,4 @@ int WriteFloat(long int addr, float value)
 {
 	driver->write(addr, &value, 4);
 	return 0;
-}
+	}

@@ -20,6 +20,6 @@ int main(int argc, char **argv)
 	float add3 = ReadFloat(add + 0x0);
 	printf("F类型 = %f\n", add3);
 std::cout << "666这个入是桂" << std::endl;
-	// WriteDword(add, 139445);
-	// WriteFloat(add, 3491613643194);
+	WriteDword(add, 16345);
+	WriteFloat(add, 17932);
 }
