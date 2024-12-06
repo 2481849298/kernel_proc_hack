@@ -26,7 +26,7 @@ enum OPERATIONS {
 //    OP_MODULE_BASE = 0x997,
     OP_HIDE_PROCESS = 0x996,
     OP_PID_HIDE_PROCESS = 0x995,
-    OP_GET_PROCESS_PID = 0x994
+    OP_GET_PROCESS_PID = 0x994,
 };
 
 /*char *get_rand_str(void)
