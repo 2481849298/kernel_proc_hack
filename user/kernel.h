@@ -33,24 +33,12 @@ class c_driver {
 		void *buffer;
 		size_t size;
 	};
-/*	typedef struct _MODULE_BASE {
-		pid_t pid;
-		char* name;
-		uintptr_t base;
-	} MODULE_BASE, *PMODULE_BASE;*/
+
   struct process {
     pid_t process_pid;
     char *process_comm;
   };
-/*enum OPERATIONS {
-    OP_INIT_KEY = 0x990,
-    OP_READ_MEM = 0x999,
-    OP_WRITE_MEM = 0x998,
-//    OP_MODULE_BASE = 0x997,
-    OP_HIDE_PROCESS = 0x996,
-    OP_PID_HIDE_PROCESS = 0x995,
-    OP_GET_PROCESS_PID = 0x994
-};*/
+
 
 	char *driver_path() {
 	DIR *dir;
@@ -167,32 +155,40 @@ class c_driver {
 		return true;
 	}
 
-	bool write(uintptr_t addr, void *buffer, size_t size) {
-		struct dan_uct dan;
+    bool write(uintptr_t addr, void* buffer, size_t size) {
+        COPY_MEMORY dan;
+        dan.pid = this->pid;
+        dan.addr = addr;
+        dan.buffer = buffer;
+        dan.size = size;
 
-		dan.pid = this->pid;
-		dan.addr = addr;
-		dan.buffer = buffer;
-		dan.size = size;
-        dan.read_write = 0x998;
-		if (ioctl(fd, 0x998, &dan) != 0) {
-			return false;
-		}
-		return true;
-	}
+        if (ioctl(fd, 0x998, &dan) != 0) {
+            return false;
+        }
+        return true;
+    }
 
-	template <typename T>
-	T read(uintptr_t addr) {
-		T res;
-		if (this->read(addr, &res, sizeof(T)))
-			return res;
-		return {};
-	}
-
-	template <typename T>
-	bool write(uintptr_t addr,T value) {
-		return this->write(addr, &value, sizeof(T));
-	}
+    template <typename T>
+    T read(uintptr_t addr) {
+        T res;
+        if (this->read(addr, &res, sizeof(T)))
+            return res;
+        return {};
+        
+    }
+template <class T> T WriteAddress(long int addr, T value)
+    {
+    char lj[128];
+    sprintf(lj, "/proc/%d/mem", pid);
+    long int handle = open(lj, O_RDWR | O_SYNC);
+    pwrite64(handle, &value, sizeof(T), addr);
+    close(handle);
+    return 0;
+    }
+    template <typename T>
+    bool write(uintptr_t addr, T value) {
+        return this->write(addr, &value, sizeof(T));
+    }
 
 /*	uintptr_t get_module_base(char* name) {
 		MODULE_BASE wudi;
@@ -207,7 +203,7 @@ class c_driver {
 		return wudi.base;
 	}*/
 	
-unsigned long GetModuleBaseAddr(const char *module_name)
+uint64_t getModuleBase(const char *module_name)
 {
 	FILE *fp;
 	unsigned long addr = 0;

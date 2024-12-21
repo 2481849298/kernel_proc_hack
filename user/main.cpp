@@ -5,7 +5,6 @@
 int main(int argc, char **argv)
 {
 	//driver->init_key("!@##$asdcgfxxxop");
-	PACKAGENAME *bm = "com.tencent.tmgp.pubgmhd";
 	pid = getPID("com.tencent.tmgp.pubgmhd");
 	printf("pid = %d\n", pid);
 	uint64_t add = getModuleBase("libUE4.so");
@@ -20,6 +19,6 @@ int main(int argc, char **argv)
 	float add3 = ReadFloat(add + 0x0);
 	printf("F类型 = %f\n", add3);
 std::cout << "666这个入是桂" << std::endl;
-	WriteDword(add, 16345);
-	WriteFloat(add, 17932);
+	//WriteDword(add, 16345);
+	//WriteFloat(add, 17932);
 }

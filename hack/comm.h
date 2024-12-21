@@ -10,11 +10,6 @@ struct dan_uct {
     size_t size;
 };
 
-/*typedef struct _MODULE_BASE {
-    pid_t pid;
-    char* name;
-    uintptr_t base;
-} MODULE_BASE, *PMODULE_BASE;*/
 struct process {
     pid_t process_pid;
 	char process_comm[15];
@@ -28,21 +23,3 @@ enum OPERATIONS {
     OP_PID_HIDE_PROCESS = 0x995,
     OP_GET_PROCESS_PID = 0x994,
 };
-
-/*char *get_rand_str(void)
-{
-	static char string[10];
-	int lstr,seed,flag,i;
-	char *str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-	lstr = strlen(str);
-	for (i = 0; i < 6; i++)
-	{
-		get_random_bytes(&seed, sizeof(int));
-		flag = seed % lstr;
-		if (flag < 0)
-			flag = flag * -1;
-		string[i] = str[flag];
-	}
-	string[6] = '\0';
-	return string;
-}*/
