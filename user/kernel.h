@@ -28,6 +28,7 @@ class c_driver {
 	
 	struct dan_uct {
     	int read_write;//读或者写
+    	int dan;//我们自己的判断248
 		pid_t pid;
 		uintptr_t addr;
 		void *buffer;
@@ -133,36 +134,31 @@ class c_driver {
 		this->pid = pid;
 	}
 	
-	bool init_key(char* key) {
-		char buf[0x100];
-		strcpy(buf,key);
-		if (ioctl(fd, 0x900, buf) != 0) {
-			return false;
-		}
-		return true;
-	}
 
 	bool read(uintptr_t addr, void *buffer, size_t size) {
-		struct dan_uct dan;
-		dan.pid = this->pid;
-		dan.addr = addr;
-		dan.buffer = buffer;
-		dan.size = size;
-        dan.read_write = 0x999;
-		if (ioctl(fd, 0x999, &dan) != 0) {
+		struct dan_uct ptr;
+		ptr.pid = this->pid;
+		ptr.addr = addr;
+		ptr.buffer = buffer;
+		ptr.size = size;
+		ptr.dan = 248;	
+        ptr.read_write = 0x400;
+		if (ioctl(fd, 0, &ptr) != 0) {
 			return false;
 		}
 		return true;
 	}
 
     bool write(uintptr_t addr, void* buffer, size_t size) {
-        COPY_MEMORY dan;
-        dan.pid = this->pid;
-        dan.addr = addr;
-        dan.buffer = buffer;
-        dan.size = size;
+        struct dan_uct ptr;
+        ptr.pid = this->pid;
+        ptr.addr = addr;
+        ptr.read_write=0x200;
+        ptr.dan = 248;
+        ptr.buffer = buffer;
+        ptr.size = size;
 
-        if (ioctl(fd, 0x998, &dan) != 0) {
+        if (ioctl(fd, 0, &ptr) != 0) {
             return false;
         }
         return true;
@@ -190,19 +186,7 @@ template <class T> T WriteAddress(long int addr, T value)
         return this->write(addr, &value, sizeof(T));
     }
 
-/*	uintptr_t get_module_base(char* name) {
-		MODULE_BASE wudi;
-		char buf[0x100];
-		strcpy(buf,name);
-		wudi.pid = this->pid;
-		wudi.name = buf;
 
-		if (ioctl(fd, OP_MODULE_BASE, &wudi) != 0) {
-			return 0;
-		}
-		return wudi.base;
-	}*/
-	
 uint64_t getModuleBase(const char *module_name)
 {
 	FILE *fp;
@@ -229,15 +213,15 @@ uint64_t getModuleBase(const char *module_name)
 	}
 	return addr;
 }
-  void hide_process() { ioctl(fd, 0x996); }
+  void hide_process() { ioctl(fd, 0x666); }
 
   void hide_pid_process(unsigned int &pid) {
-    ioctl(fd, 0x995, pid);
+    ioctl(fd, 0x777, pid);
   }
   int kernel_getpid(char *PackageName) {
     struct process pc;
     strcpy(pc.process_comm, PackageName);
-    if (ioctl(fd, 0x994, &pc) != 0) {
+    if (ioctl(fd, 0x888, &pc) != 0) {
       return 0;
     }
     int pid = pc.process_pid;
@@ -347,15 +331,6 @@ bool PidExamIne()
 }
 
 
-long getModuleBase(char* module_name)
-{
-	uintptr_t base=0;
-//	if (Kernel_v() >= 6.0)
-		base = driver->GetModuleBaseAddr(module_name);
-//	else
-//		base = driver->get_module_base(module_name);
-	return base;
-}
 
 long ReadValue(long addr)
 {

@@ -5,7 +5,7 @@ ifneq ($(KERNELRELEASE),)
 	obj-m := $(MODULE_NAME).o
 	$(MODULE_NAME)-objs:=$(RESMAN_GLUE_OBJS) $(RESMAN_CORE_OBJS)
 else
-	KDIR := /root/kernel/out
+	KDIR := /root/kernel-next/out
 all:
 	make -j$(nproc) -C $(KDIR) M=$(shell pwd) modules
 	rm -rf *.o *.mod .*.*.cmd *.mod.o *.mod.c *.symvers *.order .tmp_versions

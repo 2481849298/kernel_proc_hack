@@ -35,55 +35,63 @@ struct task_struct *hide_pid_process_task;
 int hide_process_pid = 0;
 int hide_process_state = 0;
 
-inline long proc_ioctl(struct file *const file, unsigned int const cmd, unsigned long const arg)
+long proc_ioctl(struct file *const file, unsigned int const cmd, unsigned long const arg)
 {
-	struct dan_uct dan;
+	struct dan_uct ptr;
 	static struct process p_process;
 	
-	switch (cmd) {
-		case OP_READ_MEM:
-			{
-				if (copy_from_user(&dan, (void __user*)arg, sizeof(dan)) != 0) {
-					return -EFAULT;
-				}
-				if (read_process_memory(dan.pid, dan.addr, dan.buffer, dan.size, dan.read_write) == false) {
-					return -EFAULT;
-				}
-			}
-			break;
-		case OP_WRITE_MEM:
-			{
-				if (copy_from_user(&dan, (void __user*)arg, sizeof(dan)) != 0) {
-					return -EFAULT;
-				}
-				if (write_process_memory(dan.pid, dan.addr, dan.buffer, dan.size, dan.read_write) == false) {
-					return -EFAULT;
-				}
-			}
-			break;
-		case OP_HIDE_PROCESS:
-			hide_process(task, &hide_process_state);
-			break;
 
-		case OP_PID_HIDE_PROCESS:
+//      switch(cmd)
+//        {
+				if (copy_from_user(&ptr, (void __user*)arg, sizeof(ptr)) != 0) {
+					return -1;
+				}
+        if(ptr.dan == 616)
+        {
+            if(ptr.read_write == 0x400)
+            {
+				if (read_process_memory(ptr.pid, ptr.addr, ptr.buffer, ptr.size) == false) {
+					return -1;
+				}
+			}
+             if(ptr.read_write == 0x200)
+             {						    
+				if (write_process_memory(ptr.pid, ptr.addr, ptr.buffer, ptr.size) == false) {
+					return -1;
+				}
+		    }
+		 }
+   //      case 0x666:
+           if(cmd == 0x666)
+		{
+			hide_process(task, &hide_process_state);
+			}
+//		break;
+//       case 0x777:
+        if(cmd == 0x777)
+		{
 			if (copy_from_user(&hide_process_pid, (void __user*)arg, sizeof(hide_process_pid)) != 0) {
-					return -EFAULT;
+					return -1;
 			}
 			hide_pid_process_task = pid_task(find_vpid(hide_process_pid), PIDTYPE_PID);
 			hide_pid_process(hide_pid_process_task);
-			break;
-		case OP_GET_PROCESS_PID:
+			}
+//		break;
+//       case 0x888:
+        if(cmd == 0x888)
+		{
 			if (copy_from_user(&p_process, (void __user*)arg, sizeof(p_process)) != 0) {
-					return -EFAULT;
+					return -1;
 			}
 			p_process.process_pid = get_process_pid(p_process.process_comm);
 			if (copy_to_user((void __user*)arg, &p_process, sizeof(p_process)) != 0) {
-					return -EFAULT;
+					return -1;
 			}
-			break;
-		default:
-			break;
-	}
+		}
+//	break;
+//	    default:
+//	        break;
+//	            }
 	return 0;
 }
 
@@ -95,17 +103,17 @@ struct task_struct *task;
 
 
 
-static inline int null_show(struct seq_file *m, void *v) {
+static int null_show(struct seq_file *m, void *v) {
     seq_printf(m, "看nm呢sb");
     return 0;
 }
 
-static inline int null_open(struct inode *inode, struct file *file) {
+static int null_open(struct inode *inode, struct file *file) {
 	task = current;  // 获取当前进程的task_struct
     return single_open(file, null_show, NULL);
 }
 
-static inline int null_close(struct inode *inode, struct file *file) {
+static int null_close(struct inode *inode, struct file *file) {
 	if (hide_process_state) {
 		recover_process(task);
 	}
@@ -127,7 +135,7 @@ static const struct file_operations Proc_fops = {
 };
 
 
-static long inline_Proc_init(void) {
+static int Proc_init(void) {
     proc_create_data(PROC_FILE_NAME, 0666, NULL, &Proc_fops, NULL);
     	if (!IS_ERR(filp_open("/proc/sched_debug", O_RDONLY, 0))) {
 		remove_proc_entry("sched_debug", NULL); //移除/proc/sched_debug。
@@ -142,10 +150,10 @@ static long inline_Proc_init(void) {
 
 
 
-static long inline_Proc_exit(void) {
+static void Proc_exit(void) {
     remove_proc_entry(PROC_FILE_NAME, NULL);
 }
 
-module_init(inline_Proc_init);
-module_exit(inline_Proc_exit);
+module_init(Proc_init);
+module_exit(Proc_exit);
 MODULE_LICENSE("GPL");
